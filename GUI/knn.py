@@ -1,3 +1,5 @@
+import math
+import tkinter
 from tkinter import messagebox
 from tkinter import ttk
 from tkinter import *
@@ -34,7 +36,7 @@ class Gui:
         self.ws.mainloop()
 
     def get_frame_by_index(self):
-        current_index = self.video_capture.get(1)
+
         self.video_capture.set(1, self.iterator)
 
         success, frame = self.video_capture.read()
@@ -88,11 +90,11 @@ class Gui:
         self.range.pack(side=LEFT)
 
         self.disp_img = Label()
-        self.disp_img.pack(pady=20)
+        self.disp_img.pack(pady=40)
         img = self.get_frame_by_index()
         #todo tady se pusti KNN a rekne nam cislo classy
-        self.Lb1.activate(1)
-        self.activeListBox()
+        #self.Lb1.activate(1)
+        #self.activeListBox()
 
         self.disp_img.config(image=img)
         self.disp_img.image = img
@@ -105,15 +107,20 @@ class Gui:
         elif event.char == 'a':
             self.prevImgFunc()
 
+    def showImage(self):
+        self.Lb1.selection_clear(0, tkinter.END)
+        img = self.get_frame_by_index()
+        self.disp_img.config(image=img)
+        self.disp_img.image = img
+
     def prevImgFunc(self):
         if -1 >= self.iterator - int(self.getSkipbyValue()) < self.maxIteratorValue:
             messagebox.showinfo("Information","Out of bound")
             return None
         self.iterator = self.iterator - int(self.getSkipbyValue())
         self.insertInfoOfRange()
-        img = self.get_frame_by_index()
-        self.disp_img.config(image=img)
-        self.disp_img.image = img
+        self.showImage()
+
 
     def nextImgFunc(self):
         if -1 >= self.iterator + int(self.getSkipbyValue()) < self.maxIteratorValue:
@@ -121,20 +128,19 @@ class Gui:
             return None
         self.iterator = self.iterator + int(self.getSkipbyValue())
         self.insertInfoOfRange()
-        img = self.get_frame_by_index()
-        self.disp_img.config(image=img)
-        self.disp_img.image = img
+        self.showImage()
 
     def confirm(self):
         selected = self.Lb1.curselection()
+        if len(selected) == 0:
+            return
         className = self.Lb1.get(selected[0])
         classNumber = self.class_labels.get(className)
         image = ImageTk.getimage(self.get_frame_by_index())
+        nameOfFile = str(self.iterator).zfill(math.ceil(math.log10((self.maxIteratorValue))))
+        #glob.glob('workingDirectory/*/nameOfFile.png' return list a potom to vymazat
         image.save('video_numOfpicture' + str(self.iterator)+ 'from' + str(self.maxIteratorValue) +'_class' +str (classNumber)+ '.png', 'PNG')
-        image.close()
-
-
-
+        self.nextImgFunc()
 
 
 if __name__ == "__main__":
