@@ -1,13 +1,64 @@
 import mediapipe as mp
 mp_pose = mp.solutions.pose
 from tensorflow import keras
-from keras import layers
+from keras import layers, Model
 import tensorflow as tf
 import os
 import random
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
+
+
+def create_dense_pose_model(out_classes):
+    in_model_1d = layers.Input((33, 2))
+    model_1d = layers.Conv1D(
+            filters=16,
+            kernel_size=3,
+            activation=keras.activations.relu,
+            padding="same",
+            input_shape=(33, 2)
+        )(in_model_1d)
+    model_1d = layers.BatchNormalization()(model_1d)
+    model_1d = layers.Dropout(0.2)(model_1d)
+    model_1d = layers.MaxPooling1D()(model_1d)
+    model_1d = layers.Conv1D(
+            filters=16,
+            kernel_size=3,
+            activation=keras.activations.relu,
+            padding="same",
+        )(model_1d)
+    model_1d = layers.BatchNormalization()(model_1d)
+    model_1d = layers.Dropout(0.2)(model_1d)
+    model_1d = layers.Flatten()(model_1d)
+
+    #model_1d_compiled = Model(in_model_1d, model_1d)
+    #model_1d_compiled.summary()
+
+    in_model_2d = layers.Input((224, 224, 3), dtype = tf.uint8)
+    x = tf.cast(in_model_2d, tf.float32)
+    x = tf.keras.applications.densenet.preprocess_input(x)
+    densenet = tf.keras.applications.densenet.DenseNet201(include_top=False, weights='imagenet', input_shape=(224, 224, 3), pooling='avg')
+    x = densenet(x)
+    #model_2d = layers.Flatten()(densenet.output)
+    model_2d = layers.Dense(256, activation='relu')(x)
+
+    merged = layers.Concatenate()([model_1d, model_2d])
+    output = layers.Dense(out_classes, activation='softmax')(merged)
+
+    model = Model(inputs=[in_model_1d, in_model_2d], outputs=[output])
+    model.summary()
+
+    model.compile(
+        optimizer=keras.optimizers.Adam(learning_rate=0.0001),
+        loss='categorical_crossentropy',
+        metrics=[tf.keras.metrics.CategoricalAccuracy(name="accuracy")]
+    )
+
+    return model
+
+    # model_2d = tf.keras.applications.densenet.DenseNet201(include_top=True, weights='imagenet', input_shape=(224, 224, 3), classes=11)
+
 
 def create_model():
     """
