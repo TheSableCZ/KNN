@@ -117,10 +117,11 @@ def get_label_from_prediction(prediction, class_labels):
 def predict_with_static_image(
         model,
         class_labels,
-        data_path,
+        image
 ):
     pose = mp_pose.Pose(static_image_mode=True, min_detection_confidence=0.5)
     mp_drawing = mp.solutions.drawing_utils
+    """
     for class_name in class_labels.keys():
         path = f"{data_path}{class_name}/Test"
         filenames = os.listdir(path)
@@ -134,27 +135,35 @@ def predict_with_static_image(
         image = cv2.imread(filepath)
         if image is None:
             continue
-        results = pose.process(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
+    """
+    results = pose.process(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
 
-        # Draw skeleton on image
-        annotated_image = image.copy()
-        mp_drawing.draw_landmarks(annotated_image, results.pose_landmarks, mp_pose.POSE_CONNECTIONS)
-        cv2.imshow('', annotated_image)
-        cv2.waitKey()
+    # Draw skeleton on image
+    annotated_image = image.copy()
+    mp_drawing.draw_landmarks(annotated_image, results.pose_landmarks, mp_pose.POSE_CONNECTIONS)
+    cv2.imshow('', annotated_image)
+    cv2.waitKey()
 
-        if not results.pose_landmarks:
-            continue
-
-        # Extract x,y coordinates of key poitns
+    if not results.pose_landmarks:
+        # continue
+        sample = [(0.0, 0.0)] * 33
+    else:
+        # Combine landmarks into datasample
         sample = []
         for lm in results.pose_landmarks.landmark:
+            # Create sample which is M x 2 where M is the number of keypoints detected and their
+            # x and y coordinates
             sample.append((lm.x, lm.y))
 
-        # get prediction for skeleton
-        print(class_name)
-        prediction = model(np.array(sample)[np.newaxis, :, :])
-        print(prediction)
-        print(f"predicted class: {list(class_labels.keys())[np.argmax(prediction)]}")
+    resized_img = cv2.resize(image, (224, 224))
+    finalImage = cv2.cvtColor(resized_img, cv2.COLOR_BGR2RGB)
+
+    # get prediction for skeleton
+    # print(class_name)
+    prediction = model(np.array([np.array(sample), finalImage])[np.newaxis, :])
+    print(prediction)
+    print(f"predicted class: {list(class_labels.keys())[np.argmax(prediction)]}")
+    return prediction
 
 def predict_with_video(model, class_labels):
     # Test net on video
