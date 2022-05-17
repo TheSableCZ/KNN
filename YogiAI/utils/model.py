@@ -160,7 +160,7 @@ def predict_with_static_image(
 
     # get prediction for skeleton
     # print(class_name)
-    prediction = model(np.array([np.array(sample), finalImage])[np.newaxis, :])
+    prediction = model([np.array(sample)[np.newaxis, :, :], finalImage[np.newaxis, :, :]])
     print(prediction)
     print(f"predicted class: {list(class_labels.keys())[np.argmax(prediction)]}")
     return prediction
