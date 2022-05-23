@@ -141,8 +141,8 @@ def predict_with_static_image(
     # Draw skeleton on image
     annotated_image = image.copy()
     mp_drawing.draw_landmarks(annotated_image, results.pose_landmarks, mp_pose.POSE_CONNECTIONS)
-    cv2.imshow('', annotated_image)
-    cv2.waitKey()
+    #cv2.imshow('', annotated_image)
+    #cv2.waitKey()
 
     if not results.pose_landmarks:
         # continue
@@ -163,7 +163,7 @@ def predict_with_static_image(
     prediction = model([np.array(sample)[np.newaxis, :, :], finalImage[np.newaxis, :, :]])
     print(prediction)
     print(f"predicted class: {list(class_labels.keys())[np.argmax(prediction)]}")
-    return prediction
+    return prediction.numpy()
 
 def predict_with_video(model, class_labels):
     # Test net on video
