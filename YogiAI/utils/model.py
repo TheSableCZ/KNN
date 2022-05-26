@@ -2,6 +2,7 @@ import mediapipe as mp
 mp_pose = mp.solutions.pose
 from tensorflow import keras
 from keras import layers, Model
+from keras.callbacks import EarlyStopping
 import tensorflow as tf
 import os
 import random
@@ -99,6 +100,7 @@ def create_model():
     )
     return model
 
+
 def get_label_from_prediction(prediction, class_labels):
     """
     Gets the label from the 1-hot encoded prediction
@@ -114,28 +116,14 @@ def get_label_from_prediction(prediction, class_labels):
             break
     return label
 
-def predict_with_static_image(
+def predict_with_static_image_for_gui(
         model,
         class_labels,
         image
 ):
     pose = mp_pose.Pose(static_image_mode=True, min_detection_confidence=0.5)
     mp_drawing = mp.solutions.drawing_utils
-    """
-    for class_name in class_labels.keys():
-        path = f"{data_path}{class_name}/Test"
-        filenames = os.listdir(path)
-        idx = random.randint(0, len(filenames) - 1)
-        filename = filenames[idx]
-        if not filename.endswith(".jpg"):
-            while not filename.endswith(".jpg"):
-                idx = random.randint(0, len(filenames))
-                filename = filenames[idx]
-        filepath = f"{path}/{filename}"
-        image = cv2.imread(filepath)
-        if image is None:
-            continue
-    """
+
     results = pose.process(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
 
     # Draw skeleton on image
@@ -164,6 +152,48 @@ def predict_with_static_image(
     print(prediction)
     print(f"predicted class: {list(class_labels.keys())[np.argmax(prediction)]}")
     return prediction.numpy()
+
+def predict_with_static_image(
+        model,
+        class_labels,
+        data_path,
+):
+    pose = mp_pose.Pose(static_image_mode=True, min_detection_confidence=0.5)
+    mp_drawing = mp.solutions.drawing_utils
+    for class_name in class_labels.keys():
+        path = f"{data_path}{class_name}/Test"
+        filenames = os.listdir(path)
+        idx = random.randint(0, len(filenames) - 1)
+        filename = filenames[idx]
+        if not filename.endswith(".jpg"):
+            while not filename.endswith(".jpg"):
+                idx = random.randint(0, len(filenames))
+                filename = filenames[idx]
+        filepath = f"{path}/{filename}"
+        image = cv2.imread(filepath)
+        if image is None:
+            continue
+        results = pose.process(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
+
+        # Draw skeleton on image
+        annotated_image = image.copy()
+        mp_drawing.draw_landmarks(annotated_image, results.pose_landmarks, mp_pose.POSE_CONNECTIONS)
+        cv2.imshow('', annotated_image)
+        cv2.waitKey()
+
+        if not results.pose_landmarks:
+            continue
+
+        # Extract x,y coordinates of key poitns
+        sample = []
+        for lm in results.pose_landmarks.landmark:
+            sample.append((lm.x, lm.y))
+
+        # get prediction for skeleton
+        print(class_name)
+        prediction = model(np.array(sample)[np.newaxis, :, :])
+        print(prediction)
+        print(f"predicted class: {list(class_labels.keys())[np.argmax(prediction)]}")
 
 def predict_with_video(model, class_labels):
     # Test net on video
@@ -212,8 +242,9 @@ def predict_with_video(model, class_labels):
     cv2.destroyAllWindows()
 
 def train_model(model, config, train_dataset, val_dataset):
-    history = model.fit(train_dataset, epochs=100, validation_data=val_dataset)
-    model.save("path/to/saved/models")
+    early_stopping = EarlyStopping(monitor='val_loss', patience=10, verbose=0, mode='min')
+    history = model.fit(train_dataset, epochs=100, validation_data=val_dataset, callbacks=[early_stopping])
+    model.save("trained_models")
     if config["display_stats"]:
         # summarize history for acc
         plt.plot(history.history['accuracy'])

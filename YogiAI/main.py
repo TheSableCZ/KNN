@@ -24,10 +24,11 @@ class_labels = {'Chair_Pose_or_Utkatasana_': 0,
                 'Warrior_I_Pose_or_Virabhadrasana_I_': 10}
 
 data_path = "../yoga11/"
+#data_path = "./content/drive/MyDrive/final_KNN/KNN-master/yoga11/"
 
 config = {
     "create_model": True,
-    "load_model": False,
+    "load_model": True,
     "train_model": True,
     "eval_model": True,
     "predict_static": True,
@@ -54,7 +55,7 @@ if __name__ == "__main__":
     if config["create_model"]:
         model = create_dense_pose_model(len(class_labels))  # create_model()
     if config["load_model"]:
-        model = keras.models.load_model("path/to/saved/models")
+        model = keras.models.load_model("trained_models")
     if config["train_model"]:
         train_model(model, config, train_dataset, val_dataset)
     if config["eval_model"]:

@@ -12,7 +12,7 @@ import cv2
 import glob
 import tensorflow as tf
 
-from YogiAI.utils.model import predict_with_static_image
+from YogiAI.utils.model import predict_with_static_image_for_gui
 
 
 class Gui:
@@ -90,7 +90,7 @@ class Gui:
         success, frame = self.video_capture.read()
         if frame is None:
             return
-        result = predict_with_static_image(self.model, self.class_labels, frame)
+        result = predict_with_static_image_for_gui(self.model, self.class_labels, frame)
         resultMax = result.max()
         if resultMax > 0.95:
             self.findPic = True
