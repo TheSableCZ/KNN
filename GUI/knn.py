@@ -36,8 +36,7 @@ class Gui:
         self.skipValue = 0
         self.findPic = False
         self.listOfImages = []
-        self.video_capture = cv2.VideoCapture('../pictures/video.mp4')  # todo video z argv[1]
-        # todo potrebuju zaplnit list arrayOfPictures dvojcemi (cisloSnimku, classa)
+        self.video_capture = cv2.VideoCapture(sys.argv[1])
         self.maxIteratorValue = int(self.video_capture.get(cv2.CAP_PROP_FRAME_COUNT))
 
         self.class_labels = {'Chair Pose': 0,
@@ -89,6 +88,8 @@ class Gui:
     def loadListWithFrameAndClass(self):
         self.video_capture.set(1, self.iterator)
         success, frame = self.video_capture.read()
+        if frame is None:
+            return
         result = predict_with_static_image(self.model, self.class_labels, frame)
         resultMax = result.max()
         if resultMax > 0.95:
@@ -120,7 +121,7 @@ class Gui:
         self.range.insert(chars=str(self.iterator) + ' / ' + str(self.maxIteratorValue), index=END)
 
     def deleteImage(self):
-        nameOfFile = str(self.listOfImages[self.iterator][0]).zfill(
+        nameOfFile = sys.argv[1] + str(self.listOfImages[self.iterator][0]).zfill(
             math.ceil(math.log10(int(self.video_capture.get(cv2.CAP_PROP_FRAME_COUNT)))))
         list = glob.glob('workingDirectory/*/' + nameOfFile + '.png')
         for x in list:
@@ -152,7 +153,7 @@ class Gui:
         nextImg = ttk.Button(frame, text='Next', command=lambda: self.nextImgFunc())
         nextImg.pack(side=LEFT)
 
-        deleteImage = ttk.Button(frame, text='Undo', command=lambda: self.deleteImage())
+        deleteImage = ttk.Button(frame, text='Delete', command=lambda: self.deleteImage())
         deleteImage.pack(side=LEFT)
 
         self.range = Text(frame, width=15, height=1)
@@ -178,7 +179,7 @@ class Gui:
         self.textOfClass.configure(text=str(key[0]))
 
     def checkIfSaved(self):
-        nameOfFile = str(self.listOfImages[self.iterator][0]).zfill(
+        nameOfFile = sys.argv[1] + str(self.listOfImages[self.iterator][0]).zfill(
             math.ceil(math.log10(int(self.video_capture.get(cv2.CAP_PROP_FRAME_COUNT)))))
         list = glob.glob('workingDirectory/*/' + nameOfFile + '.png')
         if len(list) > 0:
@@ -222,9 +223,8 @@ class Gui:
             self.currnentIndexOfClass = selected[0]
         directoryNum = self.currnentIndexOfClass
         _, frame = self.get_frame_by_index()
-        nameOfFile = str(self.listOfImages[self.iterator][0]).zfill(math.ceil(math.log10(int(self.video_capture.get(cv2.CAP_PROP_FRAME_COUNT)))))
+        nameOfFile = sys.argv[1] + str(self.listOfImages[self.iterator][0]).zfill(math.ceil(math.log10(int(self.video_capture.get(cv2.CAP_PROP_FRAME_COUNT)))))
         self.deleteImage()
-        # todo pred cislo nejaky nazev argv[1] treba
         image = Image.fromarray(frame)
         image.save('workingDirectory/class' + str(directoryNum) + '/' + nameOfFile + '.png', 'PNG')
         self.nextImgFunc()
